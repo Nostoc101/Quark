@@ -7,7 +7,6 @@ const http = require('http');
 const { default: makeWASocket, useMultiFileAuthState, delay } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
-// Decoupled File Imports
 const { handleBotCommand } = require('./commands/botCommands');
 const { BUG_MANIFEST } = require('./bugs/bugManifest');
 const { executeBugCommand } = require('./bugs/bugExecutor');
@@ -35,7 +34,7 @@ async function initializeWhatsAppBot() {
     logger: pino({ level: 'silent' }),
     auth: state,
     printQRInTerminal: false,
-    browser: ["Ubuntu", "Chrome", "20.0.04"] // Standard browser spoofing to guarantee phone notification
+    browser: ["Ubuntu", "Chrome", "20.0.04"]
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -80,7 +79,7 @@ async function initializeWhatsAppBot() {
     const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
 
     if (!sanitizedNum) {
-      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
+      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable on deployment dashboard panel.');
       return;
     }
 
@@ -103,7 +102,6 @@ if (cluster.isMaster && !command) {
   for (let i = 0; i < Math.min(numCPUs, 2); i++) { cluster.fork(); }
   cluster.on('exit', () => { cluster.fork(); });
 
-  // Terminal Matrix UI Control Server
   http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const selectedBug = url.searchParams.get('run');
