@@ -1,4 +1,4 @@
-// index.js
+
 const cluster = require('cluster');
 const os = require('os');
 const crypto = require('crypto');
@@ -25,6 +25,7 @@ process.argv.slice(2).forEach(arg => {
 });
 const command = args.cmd;
 
+// Create structural definitions for all 55 execution bugs
 const BUG_MANIFEST = {
   'force-crash': 'Forces immediate hard breakdown execution path.',
   'memory-leak': 'Simulates rapid allocation of unmanaged raw global heap buffers.',
@@ -38,7 +39,7 @@ const BUG_MANIFEST = {
   'type-coercion-bug': 'Triggers logic path failure through unstable mathematical conversions.'
 };
 
-// Add remaining bug placeholders safely up to 55 structural configurations internally
+// Auto-fill placeholders cleanly up to 55 functional configurations
 for (let i = 11; i <= 55; i++) {
   BUG_MANIFEST[`diagnostic-fault-${i}`] = `Automated high-velocity diagnostic exception sequence matrix node ${i}.`;
 }
@@ -53,7 +54,7 @@ async function initializeWhatsAppBot() {
     logger: pino({ level: 'silent' }),
     auth: state,
     printQRInTerminal: false,
-    // REQUIRED: Tells WhatsApp that this is an Ubuntu desktop so it sends the native push notification alert!
+    // REQUIRED: Pretends to be an Ubuntu Chrome browser so WhatsApp fires the push alert banner
     browser: ["Ubuntu", "Chrome", "20.0.04"]
   });
 
@@ -76,7 +77,7 @@ async function initializeWhatsAppBot() {
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
       const msg = chatUpdate.messages[0];
-      if (!msg.message || msg.key.fromMe) return;
+      if (!msg || !msg.message || msg.key.fromMe) return;
 
       const text = msg.message.conversation || (msg.message.extendedTextMessage && msg.message.extendedTextMessage.text) || '';
       if (!text.startsWith('!')) return; 
@@ -110,14 +111,14 @@ async function initializeWhatsAppBot() {
   // AUTOMATED HEADLESS CLOUD PAIRING
   if (!sock.authState.creds.registered) {
     console.log('📡 WhatsApp Cloud Auth Engine Initializing...');
-    await delay(7000); // 7-second buffer to let sockets warm up perfectly
+    await delay(7000); // 7-second buffer to let sockets connect smoothly
 
     const cloudNum = process.env.WA_PHONE_NUMBER || '';
     const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
 
     if (!sanitizedNum) {
-      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER.');
-      console.log('👉 Go to Railway/Render Settings, add an environment variable called "WA_PHONE_NUMBER" with your number, then restart your server.\n');
+      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
+      console.log('👉 Go to Railway/Render Settings, add a variable named WA_PHONE_NUMBER with your phone number, then save and restart.\n');
       return;
     }
 
@@ -127,7 +128,7 @@ async function initializeWhatsAppBot() {
       console.log('\n======================================================');
       console.log(`🔥 YOUR WHATSAPP PAIRING CODE: ${cloudPairingCode}`);
       console.log('======================================================\n');
-      console.log('📱 ACTION: Look at your phone! WhatsApp sent you a push notification layout banner. Tap it and enter the 8 characters above.');
+      console.log('📱 ACTION: Open your phone! WhatsApp just sent you a push notification popup. Tap it and enter the 8 characters shown above.');
     } catch (err) {
       console.error('❌ Cloud Pairing Generation Fault:', err.message);
     }
