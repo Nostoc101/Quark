@@ -1,5 +1,4 @@
 // index.js
-const cluster = require('cluster');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
@@ -21,12 +20,16 @@ function logToFile(type, message) {
   try { fs.appendFileSync(LOG_FILE, logLine, 'utf8'); } catch (err) {}
 }
 
-const args = {};
-process.argv.slice(2).forEach(arg => {
-  const [key, value] = arg.replace(/^--/, '').split('=');
-  args[key] = value;
+// Global safety nets to intercept bugs completely without crashing your cloud container container blast radius
+process.on('uncaughtException', (err) => { 
+  logToFile('UNCAUGHT_FAULT', err.stack); 
+  console.error('🛡️ Intercepted Runtime Error:', err.message);
 });
-const command = args.cmd;
+
+process.on('unhandledRejection', (reason) => { 
+  logToFile('UNHANDLED_PROMISE', String(reason)); 
+  console.error('🛡️ Intercepted Promise Rejection:', reason);
+});
 
 // ========================================================
 // WHATSAPP CLOUD BOT MODULE
@@ -38,7 +41,7 @@ async function initializeWhatsAppBot() {
     logger: pino({ level: 'silent' }),
     auth: state,
     printQRInTerminal: false,
-    browser: ["Ubuntu", "Chrome", "20.0.04"] // Standard browser spoofing to guarantee phone notification
+    browser: ["Ubuntu", "Chrome", "20.0.04"] // Standard browser spoofing to guarantee native pairing push notification
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -49,7 +52,7 @@ async function initializeWhatsAppBot() {
       const reason = lastDisconnect?.error?.output?.statusCode;
       if (reason !== 401) {
         console.log('🔄 Reconnecting WhatsApp Engine...');
-        initializeWhatsAppBot();
+        setTimeout(() => initializeWhatsAppBot(), 5000);
       }
     } else if (connection === 'open') {
       console.log('✅ WhatsApp Engine Linked and Operating Online!');
@@ -58,13 +61,15 @@ async function initializeWhatsAppBot() {
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
-      const msg = chatUpdate.messages;
-      if (!msg || !msg.message || msg.key.fromMe) return;
+      // FIX: Securely extract from the first element of the array safely
+      if (!chatUpdate.messages || chatUpdate.messages.length === 0) return;
+      const singleMsg = chatUpdate.messages[0];
+      if (!singleMsg.message || singleMsg.key.fromMe) return;
 
-      const text = msg.message.conversation || (msg.message.extendedTextMessage && msg.message.extendedTextMessage.text) || '';
+      const text = singleMsg.message.conversation || (singleMsg.message.extendedTextMessage && singleMsg.message.extendedTextMessage.text) || '';
       if (!text.startsWith('!')) return; 
 
-      const from = msg.key.remoteJid;
+      const from = singleMsg.key.remoteJid;
       const argsList = text.trim().slice(1).split(/ +/);
       const botCommand = argsList.shift().toLowerCase();
 
@@ -82,7 +87,7 @@ async function initializeWhatsAppBot() {
     const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
 
     if (!sanitizedNum) {
-      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
+      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable on dashboard panel.');
       return;
     }
 
@@ -99,132 +104,121 @@ async function initializeWhatsAppBot() {
 }
 
 // ========================================================
-// CORE RECOVERY CLUSTER LAYER (SELF HEALING SYSTEM)
+// SINGLE PORT HTTP MATRIX SERVER (COMPLIANT WITH CLOUD ENVIRONMENT)
 // ========================================================
-if (cluster.isMaster && !command) {
-  const numCPUs = os.cpus().length;
-  console.log(`[MASTER PIPELINE OPERATIONAL] PID: ${process.pid} | Cores: ${numCPUs}`);
-  
-  for (let i = 0; i < Math.min(numCPUs, 2); i++) { cluster.fork(); }
-  cluster.on('exit', () => { cluster.fork(); });
+http.createServer((req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const selectedBug = url.searchParams.get('run');
 
-  // Terminal Matrix Screen Web Layout
-  http.createServer((req, res) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const selectedBug = url.searchParams.get('run');
-
-    if (selectedBug && BUG_MANIFEST[selectedBug]) {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<html><body style="background:#050507;color:#ff3333;font-family:monospace;padding:30px;"><h2>⚔️ DIABLO ATTACK INJECTED: ${selectedBug}</h2><a href="/" style="color:#f0f0f0;">Back to Sanctum Panel</a></body></html>`);
-      executeBugCommand(selectedBug);
-      return;
-    }
-
+  if (selectedBug && BUG_MANIFEST[selectedBug]) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    let gridHTML = '';
-    Object.keys(BUG_MANIFEST).forEach((key, idx) => {
-      gridHTML += `<div class="bug-card"><b style="color:#f0f0f0;">[${idx + 1}] trigger:${key}</b><p>${BUG_MANIFEST[key]}</p><a href="/?run=${key}" class="btn-launch">LAUNCH BUG</a></div>`;
-    });
+    res.end(`<html><body style="background:#050507;color:#ff3333;font-family:monospace;padding:30px;"><h2>⚔️ DIABLO ATTACK INJECTED: ${selectedBug}</h2><a href="/" style="color:#f0f0f0;">Back to Sanctum Panel</a></body></html>`);
+    
+    // Execute inside a safe asynchronous callback context to let the browser request exit clean first
+    setTimeout(() => executeBugCommand(selectedBug), 50);
+    return;
+  }
 
-    res.end(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>😈 DIABLO CORE RESILIENCE PANEL</title>
-      <style>
-        body {
-          background-color: #050507;
-          color: #d12222;
-          font-family: 'Courier New', Courier, monospace;
-          margin: 0;
-          padding: 25px;
-        }
-        h2 {
-          color: #ff3333;
-          border-bottom: 2px solid #5a0c0c;
-          padding-bottom: 15px;
-          text-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
-          letter-spacing: 2px;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .container {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 15px;
-          position: relative;
-          z-index: 2;
-        }
-        .bug-card {
-          background: #0d0d12;
-          border: 1px solid #3a0a0a;
-          padding: 15px;
-          border-radius: 4px;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.6);
-        }
-        .bug-card:hover {
-          border-color: #ff3333;
-          box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
-        }
-        .bug-card b {
-          color: #f0f0f0;
-          font-size: 13px;
-        }
-        .bug-card p {
-          color: #888282;
-          font-size: 11px;
-          margin: 8px 0 12px 0;
-          line-height: 1.4;
-        }
-        .btn-launch {
-          background: #4a0808;
-          color: #ff9999;
-          padding: 5px 12px;
-          text-decoration: none;
-          font-weight: bold;
-          font-size: 11px;
-          border: 1px solid #8a1212;
-          border-radius: 2px;
-          display: inline-block;
-          letter-spacing: 1px;
-          transition: 0.2s;
-        }
-        .btn-launch:hover {
-          background: #ff3333;
-          color: #000;
-          box-shadow: 0 0 10px #ff3333;
-        }
-        .diablo-bg {
-          position: fixed;
-          bottom: 10px;
-          right: 20px;
-          font-size: 140px;
-          color: rgba(255, 0, 0, 0.03);
-          user-select: none;
-          z-index: 1;
-          font-family: serif;
-          font-weight: bold;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="diablo-bg">DIABLO</div>
-      <h2>🔥 ⚔️ DIABLO AUTOMATED DIAGNOSTIC CORE ENVIRONMENT CONSOLE</h2>
-      <div class="container">${gridHTML}</div>
-    </body>
-    </html>
-    `);
-  }).listen(PORT, () => {
-    console.log(`Matrix Dashboard UI online on port ${PORT}`);
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  let gridHTML = '';
+  Object.keys(BUG_MANIFEST).forEach((key, idx) => {
+    gridHTML += `<div class="bug-card"><b style="color:#f0f0f0;">[${idx + 1}] trigger:${key}</b><p>${BUG_MANIFEST[key]}</p><a href="/?run=${key}" class="btn-launch">LAUNCH BUG</a></div>`;
   });
 
+  res.end(`
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <title>😈 DIABLO CORE RESILIENCE PANEL</title>
+    <style>
+      body {
+        background-color: #050507;
+        color: #d12222;
+        font-family: 'Courier New', Courier, monospace;
+        margin: 0;
+        padding: 25px;
+      }
+      h2 {
+        color: #ff3333;
+        border-bottom: 2px solid #5a0c0c;
+        padding-bottom: 15px;
+        text-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+        letter-spacing: 2px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 15px;
+        position: relative;
+        z-index: 2;
+      }
+      .bug-card {
+        background: #0d0d12;
+        border: 1px solid #3a0a0a;
+        padding: 15px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+      }
+      .bug-card:hover {
+        border-color: #ff3333;
+        box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
+      }
+      .bug-card b {
+        color: #f0f0f0;
+        font-size: 13px;
+      }
+      .bug-card p {
+        color: #888282;
+        font-size: 11px;
+        margin: 8px 0 12px 0;
+        line-height: 1.4;
+      }
+      .btn-launch {
+        background: #4a0808;
+        color: #ff9999;
+        padding: 5px 12px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 11px;
+        border: 1px solid #8a1212;
+        border-radius: 2px;
+        display: inline-block;
+        letter-spacing: 1px;
+        transition: 0.2s;
+      }
+      .btn-launch:hover {
+        background: #ff3333;
+        color: #000;
+        box-shadow: 0 0 10px #ff3333;
+      }
+      .diablo-bg {
+        position: fixed;
+        bottom: 10px;
+        right: 20px;
+        font-size: 140px;
+        color: rgba(255, 0, 0, 0.03);
+        user-select: none;
+        z-index: 1;
+        font-family: serif;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="diablo-bg">DIABLO</div>
+    <h2>🔥 ⚔️ DIABLO AUTOMATED DIAGNOSTIC CORE ENVIRONMENT CONSOLE</h2>
+    <div class="container">${gridHTML}</div>
+  </body>
+  </html>
+  `);
+}).listen(PORT, () => {
+  console.log(`Matrix Dashboard UI online on port ${PORT}`);
+  // Safe single-process baseline bot caller initialization
   initializeWhatsAppBot();
-} else {
-  process.on('uncaughtException', (err) => { logToFile('UNCAUGHT_FAULT', err.stack); process.exit(1); });
-  process.on('unhandledRejection', (reason) => { logToFile('UNHANDLED_PROMISE', String(reason)); });
-  if (command) executeBugCommand(command);
-}
+});
 
 console.log("🛡️ High-velocity cluster environment safeguards fully initialized.");
