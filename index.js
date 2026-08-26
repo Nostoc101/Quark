@@ -7,6 +7,7 @@ const http = require('http');
 const { default: makeWASocket, useMultiFileAuthState, delay } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
+// Clean decoupled file imports
 const { handleBotCommand } = require('./commands/botCommands');
 const { BUG_MANIFEST } = require('./bugs/bugManifest');
 const { executeBugCommand } = require('./bugs/bugExecutor');
@@ -27,6 +28,9 @@ process.argv.slice(2).forEach(arg => {
 });
 const command = args.cmd;
 
+// ========================================================
+// WHATSAPP CLOUD BOT MODULE
+// ========================================================
 async function initializeWhatsAppBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_session');
   
@@ -34,7 +38,7 @@ async function initializeWhatsAppBot() {
     logger: pino({ level: 'silent' }),
     auth: state,
     printQRInTerminal: false,
-    browser: ["Ubuntu", "Chrome", "20.0.04"]
+    browser: ["Ubuntu", "Chrome", "20.0.04"] // Standard browser spoofing to guarantee phone notification
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -54,7 +58,7 @@ async function initializeWhatsAppBot() {
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
-      const msg = chatUpdate.messages[0];
+      const msg = chatUpdate.messages;
       if (!msg || !msg.message || msg.key.fromMe) return;
 
       const text = msg.message.conversation || (msg.message.extendedTextMessage && msg.message.extendedTextMessage.text) || '';
@@ -94,6 +98,9 @@ async function initializeWhatsAppBot() {
   }
 }
 
+// ========================================================
+// CORE RECOVERY CLUSTER LAYER (SELF HEALING SYSTEM)
+// ========================================================
 if (cluster.isMaster && !command) {
   const numCPUs = os.cpus().length;
   console.log(`[MASTER PIPELINE OPERATIONAL] PID: ${process.pid} | Cores: ${numCPUs}`);
@@ -101,13 +108,14 @@ if (cluster.isMaster && !command) {
   for (let i = 0; i < Math.min(numCPUs, 2); i++) { cluster.fork(); }
   cluster.on('exit', () => { cluster.fork(); });
 
+  // Terminal Matrix Screen Web Layout
   http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const selectedBug = url.searchParams.get('run');
 
     if (selectedBug && BUG_MANIFEST[selectedBug]) {
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(`<html><body style="background:#000;color:#0f6;font-family:monospace;padding:30px;"><h2>⚡ BUG TRIPPED IN PROCESS WORKER: ${selectedBug}</h2><a href="/" style="color:#fff;">Back to Matrix Panel</a></body></html>`);
+      res.end(`<html><body style="background:#050507;color:#ff3333;font-family:monospace;padding:30px;"><h2>⚔️ DIABLO ATTACK INJECTED: ${selectedBug}</h2><a href="/" style="color:#f0f0f0;">Back to Sanctum Panel</a></body></html>`);
       executeBugCommand(selectedBug);
       return;
     }
@@ -115,10 +123,99 @@ if (cluster.isMaster && !command) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     let gridHTML = '';
     Object.keys(BUG_MANIFEST).forEach((key, idx) => {
-      gridHTML += `<div style="background:#090909;border:1px solid #1a1a1a;padding:12px;font-family:monospace;color:#0f6;border-radius:4px;"><b style="color:#fff;">[${idx + 1}] trigger:${key}</b><p style="color:#666;font-size:11px;margin:5px 0;">${BUG_MANIFEST[key]}</p><a href="/?run=${key}" style="background:#0f6;color:#000;padding:2px 6px;text-decoration:none;font-weight:bold;font-size:11px;border-radius:2px;display:inline-block;">LAUNCH BUG</a></div>`;
+      gridHTML += `<div class="bug-card"><b style="color:#f0f0f0;">[${idx + 1}] trigger:${key}</b><p>${BUG_MANIFEST[key]}</p><a href="/?run=${key}" class="btn-launch">LAUNCH BUG</a></div>`;
     });
 
-    res.end(`<!DOCTYPE html><html><body style="background:#020202;color:#fff;padding:20px;font-family:monospace;"><h2>⚡ ULTIMATE NODE DIAGNOSTIC CORE ENVIRONMENT CONSOLE</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;">${gridHTML}</div></body></html>`);
+    res.end(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>😈 DIABLO CORE RESILIENCE PANEL</title>
+      <style>
+        body {
+          background-color: #050507;
+          color: #d12222;
+          font-family: 'Courier New', Courier, monospace;
+          margin: 0;
+          padding: 25px;
+        }
+        h2 {
+          color: #ff3333;
+          border-bottom: 2px solid #5a0c0c;
+          padding-bottom: 15px;
+          text-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+          letter-spacing: 2px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .container {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 15px;
+          position: relative;
+          z-index: 2;
+        }
+        .bug-card {
+          background: #0d0d12;
+          border: 1px solid #3a0a0a;
+          padding: 15px;
+          border-radius: 4px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+        }
+        .bug-card:hover {
+          border-color: #ff3333;
+          box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
+        }
+        .bug-card b {
+          color: #f0f0f0;
+          font-size: 13px;
+        }
+        .bug-card p {
+          color: #888282;
+          font-size: 11px;
+          margin: 8px 0 12px 0;
+          line-height: 1.4;
+        }
+        .btn-launch {
+          background: #4a0808;
+          color: #ff9999;
+          padding: 5px 12px;
+          text-decoration: none;
+          font-weight: bold;
+          font-size: 11px;
+          border: 1px solid #8a1212;
+          border-radius: 2px;
+          display: inline-block;
+          letter-spacing: 1px;
+          transition: 0.2s;
+        }
+        .btn-launch:hover {
+          background: #ff3333;
+          color: #000;
+          box-shadow: 0 0 10px #ff3333;
+        }
+        .diablo-bg {
+          position: fixed;
+          bottom: 10px;
+          right: 20px;
+          font-size: 140px;
+          color: rgba(255, 0, 0, 0.03);
+          user-select: none;
+          z-index: 1;
+          font-family: serif;
+          font-weight: bold;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="diablo-bg">DIABLO</div>
+      <h2>🔥 ⚔️ DIABLO AUTOMATED DIAGNOSTIC CORE ENVIRONMENT CONSOLE</h2>
+      <div class="container">${gridHTML}</div>
+    </body>
+    </html>
+    `);
   }).listen(PORT, () => {
     console.log(`Matrix Dashboard UI online on port ${PORT}`);
   });
