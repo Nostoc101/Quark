@@ -54,14 +54,13 @@ async function initializeWhatsAppBot() {
 
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
-      const msg = chatUpdate.messages;
-      if (!msg || !msg[0] || !msg[0].message || msg[0].key.fromMe) return;
+      const msg = chatUpdate.messages[0];
+      if (!msg || !msg.message || msg.key.fromMe) return;
 
-      const singleMsg = msg[0];
-      const text = singleMsg.message.conversation || (singleMsg.message.extendedTextMessage && singleMsg.message.extendedTextMessage.text) || '';
+      const text = msg.message.conversation || (msg.message.extendedTextMessage && msg.message.extendedTextMessage.text) || '';
       if (!text.startsWith('!')) return; 
 
-      const from = singleMsg.key.remoteJid;
+      const from = msg.key.remoteJid;
       const argsList = text.trim().slice(1).split(/ +/);
       const botCommand = argsList.shift().toLowerCase();
 
@@ -79,7 +78,7 @@ async function initializeWhatsAppBot() {
     const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
 
     if (!sanitizedNum) {
-      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable on deployment dashboard panel.');
+      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
       return;
     }
 
@@ -130,3 +129,5 @@ if (cluster.isMaster && !command) {
   process.on('unhandledRejection', (reason) => { logToFile('UNHANDLED_PROMISE', String(reason)); });
   if (command) executeBugCommand(command);
 }
+
+console.log("🛡️ High-velocity cluster environment safeguards fully initialized.");
