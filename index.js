@@ -1,13 +1,16 @@
-
+// index.js
 const cluster = require('cluster');
 const os = require('os');
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const https = require('https');
 const { default: makeWASocket, useMultiFileAuthState, delay } = require('@whiskeysockets/baileys');
 const pino = require('pino');
+
+// Decoupled File Imports
+const { handleBotCommand } = require('./commands/botCommands');
+const { BUG_MANIFEST } = require('./bugs/bugManifest');
+const { executeBugCommand } = require('./bugs/bugExecutor');
 
 const LOG_FILE = path.join(__dirname, 'debug.log');
 const PORT = process.env.PORT || 3000;
@@ -25,28 +28,6 @@ process.argv.slice(2).forEach(arg => {
 });
 const command = args.cmd;
 
-// Create structural definitions for all 55 execution bugs
-const BUG_MANIFEST = {
-  'force-crash': 'Forces immediate hard breakdown execution path.',
-  'memory-leak': 'Simulates rapid allocation of unmanaged raw global heap buffers.',
-  'cpu-spike': 'Engages crypto loop algorithms synchronously to stress thread allocation.',
-  'slow-network': 'Forces synthetic asynchronous connection delays inside event routing.',
-  'deadlock': 'Blocks the runtime process single-thread loop entirely for 5 seconds.',
-  'null-pointer': 'Attempts logical structural evaluation on unallocated entities.',
-  'invalid-json': 'Passes malformed non-quoted text directly to parsing engines.',
-  'infinite-loop': 'Runs a microsecond structural infinite sequence to block thread blocks.',
-  'syntax-error': 'Simulates runtime failures caused by evaluation of malformed code text.',
-  'type-coercion-bug': 'Triggers logic path failure through unstable mathematical conversions.'
-};
-
-// Auto-fill placeholders cleanly up to 55 functional configurations
-for (let i = 11; i <= 55; i++) {
-  BUG_MANIFEST[`diagnostic-fault-${i}`] = `Automated high-velocity diagnostic exception sequence matrix node ${i}.`;
-}
-
-// ========================================================
-// WHATSAPP CLOUD BOT MODULE
-// ========================================================
 async function initializeWhatsAppBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_session');
   
@@ -54,8 +35,7 @@ async function initializeWhatsAppBot() {
     logger: pino({ level: 'silent' }),
     auth: state,
     printQRInTerminal: false,
-    // REQUIRED: Pretends to be an Ubuntu Chrome browser so WhatsApp fires the push alert banner
-    browser: ["Ubuntu", "Chrome", "20.0.04"]
+    browser: ["Ubuntu", "Chrome", "20.0.04"] // Standard browser spoofing to guarantee phone notification
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -73,52 +53,34 @@ async function initializeWhatsAppBot() {
     }
   });
 
-  // POWERFUL CHAT BOT RESPONDER COMMANDS
   sock.ev.on('messages.upsert', async (chatUpdate) => {
     try {
-      const msg = chatUpdate.messages[0];
-      if (!msg || !msg.message || msg.key.fromMe) return;
+      const msg = chatUpdate.messages;
+      if (!msg || !msg[0] || !msg[0].message || msg[0].key.fromMe) return;
 
-      const text = msg.message.conversation || (msg.message.extendedTextMessage && msg.message.extendedTextMessage.text) || '';
+      const singleMsg = msg[0];
+      const text = singleMsg.message.conversation || (singleMsg.message.extendedTextMessage && singleMsg.message.extendedTextMessage.text) || '';
       if (!text.startsWith('!')) return; 
 
-      const from = msg.key.remoteJid;
+      const from = singleMsg.key.remoteJid;
       const argsList = text.trim().slice(1).split(/ +/);
       const botCommand = argsList.shift().toLowerCase();
 
-      switch (botCommand) {
-        case 'ping':
-          await sock.sendMessage(from, { text: '🏓 *Pong!* Resilient bot engine responds in microseconds.' });
-          break;
-        case 'status':
-          const stats = `⚡ *LIVE CLOUD METRICS*:\n\n• Active Engine PID: \`${process.pid}\`\n• Logic Cores: \`${os.cpus().length}\`\n• Active Heap: \`${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB\``;
-          await sock.sendMessage(from, { text: stats });
-          break;
-        case 'help':
-          await sock.sendMessage(from, { text: '🤖 *BOT COMMANDS*:\n\n• `!ping` - Test active connection speed.\n• `!status` - Get live dashboard diagnostic stats.\n• `!menu` - Show interaction panel configuration status.' });
-          break;
-        case 'menu':
-          await sock.sendMessage(from, { text: '🟢 System functional and running at 100% efficiency on your cloud server.' });
-          break;
-        default:
-          break;
-      }
+      await handleBotCommand(sock, from, botCommand, argsList);
     } catch (e) {
       logToFile('BOT_EXEC_ERROR', e.message);
     }
   });
 
-  // AUTOMATED HEADLESS CLOUD PAIRING
   if (!sock.authState.creds.registered) {
     console.log('📡 WhatsApp Cloud Auth Engine Initializing...');
-    await delay(7000); // 7-second buffer to let sockets connect smoothly
+    await delay(7000); 
 
     const cloudNum = process.env.WA_PHONE_NUMBER || '';
     const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
 
     if (!sanitizedNum) {
       console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
-      console.log('👉 Go to Railway/Render Settings, add a variable named WA_PHONE_NUMBER with your phone number, then save and restart.\n');
       return;
     }
 
@@ -128,16 +90,12 @@ async function initializeWhatsAppBot() {
       console.log('\n======================================================');
       console.log(`🔥 YOUR WHATSAPP PAIRING CODE: ${cloudPairingCode}`);
       console.log('======================================================\n');
-      console.log('📱 ACTION: Open your phone! WhatsApp just sent you a push notification popup. Tap it and enter the 8 characters shown above.');
     } catch (err) {
       console.error('❌ Cloud Pairing Generation Fault:', err.message);
     }
   }
 }
 
-// ========================================================
-// CORE RECOVERY CLUSTER LAYER (SELF HEALING SYSTEM)
-// ========================================================
 if (cluster.isMaster && !command) {
   const numCPUs = os.cpus().length;
   console.log(`[MASTER PIPELINE OPERATIONAL] PID: ${process.pid} | Cores: ${numCPUs}`);
@@ -145,7 +103,7 @@ if (cluster.isMaster && !command) {
   for (let i = 0; i < Math.min(numCPUs, 2); i++) { cluster.fork(); }
   cluster.on('exit', () => { cluster.fork(); });
 
-  // Terminal Matrix Screen Web Layout
+  // Terminal Matrix UI Control Server
   http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const selectedBug = url.searchParams.get('run');
@@ -165,29 +123,12 @@ if (cluster.isMaster && !command) {
 
     res.end(`<!DOCTYPE html><html><body style="background:#020202;color:#fff;padding:20px;font-family:monospace;"><h2>⚡ ULTIMATE NODE DIAGNOSTIC CORE ENVIRONMENT CONSOLE</h2><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;">${gridHTML}</div></body></html>`);
   }).listen(PORT, () => {
-    console.log(`Matrix Dashboard online on port ${PORT}`);
+    console.log(`Matrix Dashboard UI online on port ${PORT}`);
   });
 
   initializeWhatsAppBot();
-
 } else {
   process.on('uncaughtException', (err) => { logToFile('UNCAUGHT_FAULT', err.stack); process.exit(1); });
   process.on('unhandledRejection', (reason) => { logToFile('UNHANDLED_PROMISE', String(reason)); });
   if (command) executeBugCommand(command);
-}
-
-function executeBugCommand(cmd) {
-  switch (cmd) {
-    case 'force-crash': throw new Error('HARD_ABORT');
-    case 'memory-leak': global.leak = global.leak || []; setInterval(() => { global.leak.push(crypto.randomBytes(3000000)); }, 40); break;
-    case 'cpu-spike': while (true) { crypto.pbkdf2Sync('p', 's', 20000, 64, 'sha512'); }
-    case 'slow-network': setTimeout(() => {}, 5000); break;
-    case 'deadlock': const holdTime = Date.now() + 5000; while (Date.now() < holdTime) {} break;
-    case 'null-pointer': const emptyRef = null; console.log(emptyRef.activationProperty); break;
-    case 'invalid-json': JSON.parse("{ tokens }"); break;
-    case 'infinite-loop': while(true) {}
-    case 'syntax-error': eval('const crash = ;'); break;
-    case 'type-coercion-bug': const v = (null + undefined) * 5; break;
-    default: logToFile('BUG_TRIGGERED', `Diagnostic execution event ${cmd} activated successfully.`); break;
-  }
 }
