@@ -1,4 +1,4 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import http from 'http';
 import fs from 'fs';
@@ -101,11 +101,12 @@ async function startVigilantSystem() {
 
     const { state, saveCreds } = await useMultiFileAuthState('v7_auth_session');
 
-    // FIX: Removed the .default call to accommodate ES Module bundling architectures
+    // FIXED IMPLEMENTATION WITH WEB BROWSER RECOGNITION
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }), 
         auth: state,
-        printQRInTerminal: false 
+        printQRInTerminal: false,
+        browser: Browsers.ubuntu('Chrome') 
     });
 
     // TRIGGER LIVE NUMBER PAIRING
@@ -113,7 +114,8 @@ async function startVigilantSystem() {
         setTimeout(async () => {
             try {
                 console.log(`> CORE: Connecting to official WhatsApp authentication nodes...`);
-                let code = await sock.requestPairingCode(TARGET_PHONE);
+                const cleanPhone = TARGET_PHONE.replace(/[^0-9]/g, '');
+                let code = await sock.requestPairingCode(cleanPhone);
                 code = code?.match(/.{1,4}/g)?.join('-') || code;
                 
                 console.log(`\n${THEME.line}`);
