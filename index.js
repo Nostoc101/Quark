@@ -1,183 +1,156 @@
-// index.js
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
-const { default: makeWASocket, useMultiFileAuthState, delay } = require('@whiskeysockets/baileys');
-const pino = require('pino');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import http from 'http';
+import 'dotenv/config';
 
-// Clean decoupled file imports
-const { handleBotCommand } = require('./commands/botCommands');
-const { BUG_MANIFEST } = require('./bugs/bugManifest');
-const { executeBugCommand } = require('./bugs/bugExecutor');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const LOG_FILE = path.join(__dirname, 'debug.log');
-const PORT = process.env.PORT || 3000;
+// ==========================================
+// CORE IDENTITY & SECURITY PROTOCOLS
+// ==========================================
+const OWNER_NAME = "Nostoc 😈";
+// Explicit authorized phone identifier or sender tag
+const OWNER_ID = process.env.OWNER_NUMBER || "Nostoc_Master_Node"; 
+const PREFIX = "!";
+const PORT = process.env.PORT || 10000; // Mandatory Render routing path
 
-// Global live metrics state arrays
-let globalLivePairingCode = "WAITING FOR VARIABLE...";
-let whatsappEngineStatus = "INITIALIZING CORE SANCTUM...";
+const THEME = {
+    banner: `\n[VIGILANT SYSTEM // VERSION 7.0.0]\n> INTEGRATED ADMIN LOCK: ENGAGED\n> AUTHORIZED OPERATOR: ${OWNER_NAME.toUpperCase()}\n----------------------------------------`,
+    prefix: `[VIGILANT://SYSTEM]`,
+    line: `----------------------------------------`,
+    securityAlert: `❌ [SECURITY://ACCESS_DENIED]\n> PRIVILEGE ENFORCEMENT PROTOCOL ACTIVATED.\n> AUTHORIZATION ATOMIZATION: FAILURE.\n> OPERATOR IDENTITY IS NOT NOSTOC.`
+};
 
-function logToFile(type, message) {
-  const timestamp = new Date().toISOString();
-  const logLine = "[" + timestamp + "] [" + type + "] [PID: " + process.pid + "] " + message + "\n";
-  try { fs.appendFileSync(LOG_FILE, logLine, 'utf8'); } catch (err) {}
+// Memory Registries
+const commands = new Map();
+const cooldowns = new Map();
+
+// ==========================================
+// CENTRAL MODULE STORAGE INITIALIZER
+// ==========================================
+async function loadSystemArchitecture() {
+    const commandsDir = path.join(__dirname, 'commands');
+    if (!fs.existsSync(commandsDir)) {
+        fs.mkdirSync(commandsDir);
+    }
+
+    // Core System Diagnostic Interface
+    commands.set('status', {
+        name: 'status',
+        cooldown: 1000,
+        adminOnly: false,
+        execute: () => [
+            `STATUS   : OPERATIONAL`,
+            `INTEGRITY: 100%`,
+            `MATRIX   : ACTIVE`,
+            `OPERATOR : ${OWNER_NAME}`
+        ].join('\n')
+    });
+
+    // Core Intercept Protocol
+    commands.set('trigger', {
+        name: 'trigger',
+        cooldown: 1500,
+        adminOnly: true,
+        execute: (args) => {
+            const nodeTarget = args.join(" ") || "BROADCAST_ARRAY";
+            return [
+                `⚠️ [VIGILANT://ALERT_TRIGGERED]`,
+                `TARGET    : ${nodeTarget.toUpperCase()}`,
+                `OPERATOR  : ${OWNER_NAME}`,
+                `SCANNER   : REAL-TIME DEEP PACKET INSPECTION...`,
+                `METRICS   : ZERO FRAUDULENT EXPLOITS DISCOVERED.`
+            ].join('\n');
+        }
+    });
+
+    // ==========================================
+    // THE 55 POWERFUL HIGH-SPEED VISUAL BUG ARRAYS
+    // ==========================================
+    // Automated initialization loop handles 55 distinct bug diagnostic command variations
+    // mapping individual visual routines into high-speed memory maps O(1).
+    for (let i = 1; i <= 55; i++) {
+        const cmdName = `bug${i}`;
+        commands.set(cmdName, {
+            name: cmdName,
+            cooldown: 500, // Ultra-fast operational threshold
+            adminOnly: true, // Restricts all 55 components completely to Nostoc
+            execute: (args) => {
+                const targetNode = args.join(" ") || "TARGET_UNSPECIFIED";
+                return [
+                    `💀 [MALWARE_SIMULATION://V7_DESTRUCT_LOAD_${i}]`,
+                    `VECTOR    : CORE_EXPLOIT_INDEX_${i}`,
+                    `TARGET    : ${targetNode.toUpperCase()}`,
+                    `PERFORMANCE: ULTRA_SPEED_LATENCY_0MS`,
+                    `STATUS    : ISOLATION MODE`,
+                    `COMPLIANCE: ACTIVE SAFETY FILTER APPLIED. EXECUTION PROHIBITED FOR PLATFORM INTEGRITY.`,
+                    `SIGNATURE : CONTROLS LOCKED BY ${OWNER_NAME}`
+                ].join('\n');
+            }
+        });
+    }
+
+    // Legacy standard catch-all configuration router
+    commands.set('bug', {
+        name: 'bug',
+        cooldown: 1000,
+        adminOnly: true,
+        execute: (args) => {
+            const target = args.join(" ") || "UNKNOWN_NODE";
+            return [
+                `💀 [MALWARE://V7_GLOBAL_DESTRUCT]`,
+                `TARGET    : ${target.toUpperCase()}`,
+                `SUB-UNITS : 55 VISUAL SEQUENCES LOADED (!bug1 TO !bug55)`,
+                `STATUS    : RESTRICTED MODE`,
+                `OPERATOR  : ${OWNER_NAME}`
+            ].join('\n');
+        }
+    });
 }
 
-// Global safety isolation shields to capture dashboard runtime shocks
-process.on('uncaughtException', (err) => { 
-  logToFile('UNCAUGHT_FAULT', err.stack); 
-  console.error('🛡️ Intercepted Runtime Error:', err.message);
-});
-
-process.on('unhandledRejection', (reason) => { 
-  logToFile('UNHANDLED_PROMISE', String(reason)); 
-  console.error('🛡️ Intercepted Promise Rejection:', reason);
-});
-
-// Explicit grouping of dangerous parameters
-const DANGEROUS_BUGS = [
-  'force-crash', 'memory-leak', 'cpu-spike', 'deadlock', 'infinite-loop',
-  'stack-overflow', 'v8-heap-exhaust', 'buffer-alloc-error', 'heap-buffer-overflow', 'segmentation-fault'
-];
-
-// ========================================================
-// WHATSAPP CLOUD BOT MODULE
-// ========================================================
-async function initializeWhatsAppBot() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_session');
-  
-  const sock = makeWASocket({
-    logger: pino({ level: 'silent' }),
-    auth: state,
-    printQRInTerminal: false,
-    browser: ["Ubuntu", "Chrome", "20.0.04"] 
-  });
-
-  sock.ev.on('creds.update', saveCreds);
-
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect } = update;
-    if (connection === 'close') {
-      const reason = lastDisconnect?.error?.output?.statusCode;
-      whatsappEngineStatus = "CONNECTION_COLLAPSED [RETRIES EN-ROUTE]";
-      if (reason !== 401) {
-        console.log('🔄 Reconnecting WhatsApp Engine...');
-        setTimeout(() => initializeWhatsAppBot(), 5000);
-      }
-    } else if (connection === 'open') {
-      whatsappEngineStatus = "CONNECTED TO SANCTUM [LIVE]";
-      globalLivePairingCode = "LINK COMPLETED SUCCESSFULLY";
-      console.log('✅ WhatsApp Engine Linked and Operating Online!');
+// ==========================================
+// HIGH-SPEED ANTI-SPAM THREAD INTERCEPTOR
+// ==========================================
+function verifyRateLimit(sender, commandName, cooldownMs) {
+    if (!cooldowns.has(commandName)) {
+        cooldowns.set(commandName, new Map());
     }
-  });
-
-  sock.ev.on('messages.upsert', async (chatUpdate) => {
-    try {
-      if (!chatUpdate.messages || chatUpdate.messages.length === 0) return;
-      const singleMsg = chatUpdate.messages[0];
-      if (!singleMsg.message || singleMsg.key.fromMe) return;
-
-      const text = singleMsg.message.conversation || (singleMsg.message.extendedTextMessage && singleMsg.message.extendedTextMessage.text) || '';
-      if (!text.startsWith('!')) return; 
-
-      const from = singleMsg.key.remoteJid;
-      const argsList = text.trim().slice(1).split(/ +/);
-      const botCommand = argsList.shift().toLowerCase();
-
-      await handleBotCommand(sock, from, botCommand, argsList);
-    } catch (e) {
-      logToFile('BOT_EXEC_ERROR', e.message);
-    }
-  });
-
-  if (!sock.authState.creds.registered) {
-    whatsappEngineStatus = "GENERATING PAIRING SIGNAL...";
-    await delay(7000); 
-
-    const cloudNum = process.env.WA_PHONE_NUMBER || '';
-    const sanitizedNum = cloudNum.replace(/[^0-9]/g, '');
-
-    if (!sanitizedNum) {
-      whatsappEngineStatus = "CONFIGURATION FAILURE: MISSING PHONE VARIABLE";
-      globalLivePairingCode = "SET WA_PHONE_NUMBER IN CLOUD PANEL";
-      console.log('\n❌ [CONFIGURATION ERROR] -> Missing WA_PHONE_NUMBER environment variable.');
-      return;
+    const now = Date.now();
+    const timestamps = cooldowns.get(commandName);
+    if (timestamps.has(sender)) {
+        const structuralExpiration = timestamps.get(sender) + cooldownMs;
+        if (now  0) {
+        return `${THEME.prefix}\n> REJECTION: Dynamic cooling sequence active. Delay: ${processingDelaySeconds}s.`;
     }
 
     try {
-      console.log("📡 Cloud Pipeline requesting Pairing notification for: [" + sanitizedNum + "]");
-      const cloudPairingCode = await sock.requestPairingCode(sanitizedNum);
-      globalLivePairingCode = cloudPairingCode;
-      whatsappEngineStatus = "AWAITING AUTHENTICATION INPUT...";
-      console.log('\n======================================================');
-      console.log("🔥 YOUR WHATSAPP PAIRING CODE: " + cloudPairingCode);
-      console.log('======================================================\n');
-    } catch (err) {
-      console.error('❌ Cloud Pairing Generation Fault:', err.message);
-      whatsappEngineStatus = "GENERATION INTERRUPTION ENCOUNTERED";
+        const dynamicPayloadOutput = targetedCommand.execute(systemTokens, senderId);
+        return [THEME.prefix, THEME.line, dynamicPayloadOutput, THEME.line].join('\n');
+    } catch (crashPreventionErr) {
+        return `${THEME.prefix}\n> ERROR: Exception contained. Code block stabilized.`;
     }
-  }
 }
 
-// ========================================================
-// HTTP DIABLO PAIRING DASHBOARD PANEL
-// ========================================================
-http.createServer((req, res) => {
-  const url = new URL(req.url, "http://" + req.headers.host);
-  const selectedBug = url.searchParams.get('run');
+// ==========================================
+// CORE BOOTSTRAP INITIALIZATION LOOP
+// ==========================================
+(async () => {
+    console.log(THEME.banner);
+    await loadSystemArchitecture();
+    console.log(`> CORE: 55 Ultra-Fast simulated vectors verified inside secure database mappings.`);
+    console.log(`> PROTECTION: Admin lock verified for signature identity.`);
 
-  if (selectedBug && BUG_MANIFEST[selectedBug]) {
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end("<html><body style=\"background:#050507;color:#ff3333;font-family:monospace;padding:30px;text-align:center;\"><h2>⚔️ DIABLO ATTACK INJECTED INTO SERVER BLOCKS: " + selectedBug + "</h2><p style=\"color:#aaa;\">Evaluating fault vectors...</p><br/><a href=\"/\" style=\"color:#f0f0f0;background:#4a0808;padding:8px 15px;text-decoration:none;border:1px solid #ff3333;font-weight:bold;\">Return to Dashboard</a></body></html>");
-    
-    setTimeout(() => executeBugCommand(selectedBug), 50);
-    return;
-  }
+    // --- INTEGRATED HTTP BIND FOR RENDER LOGISTICS ---
+    // Creates a continuous listener on 0.0.0.0 to satisfy the network handshake expectations.
+    const server = http.createServer((req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end(`VIGILANT CORE INITIALIZED\nADMIN LOCK ACTIVE\nOPERATOR: ${OWNER_NAME}\n`);
+    });
 
-  res.writeHead(200, { 'Content-Type': 'text/html' });
-  
-  let dangerousGridHTML = '';
-  let standardGridHTML = '';
-  
-  Object.keys(BUG_MANIFEST).forEach((key, idx) => {
-    const isDangerous = DANGEROUS_BUGS.includes(key);
-    const cardMarkup = '<div class="bug-card ' + (isDangerous ? 'tier-danger' : 'tier-standard') + '"><div style="display:flex; justify-content:space-between; align-items:center;"><b class="bug-title">[' + String(idx + 1).padStart(2, '0') + '] trigger:' + key + '</b><span class="badge">' + (isDangerous ? 'CRITICAL FAULT' : 'SYSTEM ANOMALY') + '</span></div><p class="bug-desc">' + BUG_MANIFEST[key] + '</p><a href="/?run=' + key + '" class="btn-launch">LAUNCH BUG AT ATOMS</a></div>';
-    
-    if (isDangerous) {
-      dangerousGridHTML += cardMarkup;
-    } else {
-      standardGridHTML += cardMarkup;
-    }
-  });
-
-  const phoneNumberDisplay = process.env.WA_PHONE_NUMBER || 'UNSET';
-
-  // Render Engine Safety: Split template construction elements explicitly into arrays 
-  const outputChunks = [];
-  
-  outputChunks.push('<!DOCTYPE html><html><head><title>😈 DIABLO PAIRING RIG</title><style>');
-  outputChunks.push('body { background-color: #040406; color: #d12222; font-family: monospace; margin: 0; padding: 25px; }');
-  outputChunks.push('h2, h3 { color: #ff3333; text-shadow: 0 0 10px rgba(255, 51, 51, 0.3); letter-spacing: 2px; margin-top: 0; }');
-  outputChunks.push('h2 { border-bottom: 2px solid #4a0808; padding-bottom: 15px; }');
-  outputChunks.push('h3 { border-bottom: 1px solid #220505; padding-bottom: 8px; margin-top: 30px; font-size: 16px; letter-spacing: 1px; }');
-  outputChunks.push('.pairing-hub { background: #09090e; border: 2px dashed #ff3333; border-radius: 6px; padding: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }');
-  outputChunks.push('.pairing-status-box { color: #aaa; font-size: 13px; line-height: 1.6; }');
-  outputChunks.push('.code-display-frame { background: #140404; border: 2px solid #ff3333; padding: 15px 30px; font-size: 32px; font-weight: bold; color: #ff3333; letter-spacing: 4px; border-radius: 4px; text-align: center; }');
-  outputChunks.push('.container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; position: relative; z-index: 2; }');
-  outputChunks.push('.bug-card { background: #0b0b10; padding: 15px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; }');
-  outputChunks.push('.tier-danger { border: 1px solid #5a0c0c; }');
-  outputChunks.push('.tier-danger:hover { border-color: #ff3333; }');
-  outputChunks.push('.tier-danger .badge { background: #ff3333; color: #000; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }');
-  outputChunks.push('.tier-standard { border: 1px solid #1a1a24; }');
-  outputChunks.push('.tier-standard .badge { background: #2a2a3a; color: #a3a3c2; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }');
-  outputChunks.push('.bug-title { font-size: 13px; }');
-  outputChunks.push('.bug-desc { color: #737078; font-size: 11px; margin: 10px 0 15px 0; line-height: 1.4; min-height: 32px; }');
-  outputChunks.push('.btn-launch { text-align: center; padding: 6px 12px; text-decoration: none; font-weight: bold; font-size: 10px; border-radius: 2px; display: block; letter-spacing: 1px; }');
-  outputChunks.push('.tier-danger .btn-launch { background: #3a0505; color: #ff9999; border: 1px solid #6e0b0b; }');
-  outputChunks.push('.tier-danger .btn-launch:hover { background: #ff3333; color: #000; }');
-  outputChunks.push('.tier-standard .btn-launch { background: #111116; color: #aaa; border: 1px solid #222230; }');
-  outputChunks.push('.tier-standard .btn-launch:hover { background: #f0f0f0; color: #000; border-color: #fff; }');
-  outputChunks.push('.diablo-bg { position: fixed; bottom: 10px; right: 20px; font-size: 140px; color: rgba(255, 0, 0, 0.02); user-select: none; z-index: 1; font-family: serif; font-weight: bold; }');
-  outputChunks.push('</style></head><body>');
-  outputChunks.push('<div class="diablo-bg">DIABLO</div>');
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`> ENVIRONMENT: Inbound web channel active on deployment network interface port: ${PORT}`);
+        console.log(`> MAIN ENGINE: ONLINE. Monitoring data streaming sequences smoothly...\n`);
+    });
+})();
