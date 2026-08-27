@@ -51,8 +51,8 @@ async function loadSystemArchitecture() {
         const cmdName = `bug${i}`;
         commands.set(cmdName, {
             name: cmdName,
-            cooldown: 500, // Ultra-fast operational threshold
-            adminOnly: true, // Restricted completely to Nostoc
+            cooldown: 500, 
+            adminOnly: true, 
             execute: (args) => {
                 const targetNode = args.join(" ") || "TARGET_UNSPECIFIED";
                 return `💀 [MALWARE_SIMULATION://V7_DESTRUCT_LOAD_${i}]\nVECTOR    : CORE_EXPLOIT_INDEX_${i}\nTARGET    : ${targetNode.toUpperCase()}\nSTATUS    : TESTING / RESTRICTED\nSIGNATURE : LOCKED BY ${OWNER_NAME}`;
@@ -101,7 +101,8 @@ async function startVigilantSystem() {
 
     const { state, saveCreds } = await useMultiFileAuthState('v7_auth_session');
 
-    const sock = makeWASocket.default({
+    // FIX: Removed the .default call to accommodate ES Module bundling architectures
+    const sock = makeWASocket({
         logger: pino({ level: 'silent' }), 
         auth: state,
         printQRInTerminal: false 
@@ -143,11 +144,12 @@ async function startVigilantSystem() {
 
     // LISTEN FOR LIVE COMMANDS
     sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages[0];
-        if (!msg || !msg.message || msg.key.fromMe) return;
+        const msg = m.messages;
+        if (!msg || !msg[0] || !msg[0].message || msg[0].key.fromMe) return;
 
-        const senderId = msg.key.participant || msg.key.remoteJid;
-        const rawText = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
+        const currentMsg = msg[0];
+        const senderId = currentMsg.key.participant || currentMsg.key.remoteJid;
+        const rawText = currentMsg.message.conversation || currentMsg.message.extendedTextMessage?.text || "";
 
         if (!rawText.startsWith(PREFIX)) return;
 
@@ -160,20 +162,20 @@ async function startVigilantSystem() {
         // --- ENFORCE STRICT NOSTOC ADMIN LOCK ---
         const isAdmin = senderId.includes(TARGET_PHONE) || senderId.includes("234"); 
         if (targetedCommand.adminOnly && !isAdmin) {
-            await sock.sendMessage(msg.key.remoteJid, { text: `${THEME.prefix}\n${THEME.line}\n${THEME.securityAlert}\n${THEME.line}` });
+            await sock.sendMessage(currentMsg.key.remoteJid, { text: `${THEME.prefix}\n${THEME.line}\n${THEME.securityAlert}\n${THEME.line}` });
             return;
         }
 
         const processingDelaySeconds = verifyRateLimit(senderId, invokedCommand, targetedCommand.cooldown || 1000);
         if (processingDelaySeconds > 0) {
-            await sock.sendMessage(msg.key.remoteJid, { text: `${THEME.prefix}\n> REJECTION: Thread cooling down. Wait ${processingDelaySeconds}s.` });
+            await sock.sendMessage(currentMsg.key.remoteJid, { text: `${THEME.prefix}\n> REJECTION: Thread cooling down. Wait ${processingDelaySeconds}s.` });
             return;
         }
 
         try {
             const output = targetedCommand.execute(systemTokens, senderId);
             const responseText = [THEME.prefix, THEME.line, output, THEME.line].join('\n');
-            await sock.sendMessage(msg.key.remoteJid, { text: responseText });
+            await sock.sendMessage(currentMsg.key.remoteJid, { text: responseText });
         } catch (err) {
             console.error(err);
         }
