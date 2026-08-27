@@ -153,11 +153,11 @@ http.createServer((req, res) => {
 
   const phoneNumberDisplay = process.env.WA_PHONE_NUMBER || 'UNSET';
 
-  // Build HTML completely using string chunks to prevent syntax token drops
+  // Build the entire document explicitly with string chunks to prevent syntax engine crashes
   let htmlResponse = '';
   htmlResponse += '<!DOCTYPE html><html><head><title>😈 DIABLO PAIRING & CONSOLE RIG</title>';
   htmlResponse += '<style>';
-  htmlResponse += 'body { background-color: #040406; color: #d12222; font-family: \'Courier New\', Courier, monospace; margin: 0; padding: 25px; }';
+  htmlResponse += 'body { background-color: #040406; color: #d12222; font-family: "Courier New", Courier, monospace; margin: 0; padding: 25px; }';
   htmlResponse += 'h2, h3 { color: #ff3333; text-shadow: 0 0 10px rgba(255, 51, 51, 0.3); letter-spacing: 2px; margin-top: 0; }';
   htmlResponse += 'h2 { border-bottom: 2px solid #4a0808; padding-bottom: 15px; }';
   htmlResponse += 'h3 { border-bottom: 1px solid #220505; padding-bottom: 8px; margin-top: 30px; font-size: 16px; letter-spacing: 1px; }';
@@ -177,4 +177,3 @@ http.createServer((req, res) => {
   htmlResponse += '.tier-standard .bug-title { color: #ccc; }';
   htmlResponse += '.bug-desc { color: #737078; font-size: 11px; margin: 10px 0 15px 0; line-height: 1.4; min-height: 32px; }';
   htmlResponse += '.btn-launch { text-align: center; padding: 6px 12px; text-decoration: none; font-weight: bold; font-size: 10px; border-radius: 2px; display: block; letter-spacing: 1px; transition: 0.2s; }';
-  htmlResponse += '.tier-danger .btn-launch { background: #3a0505; color: #ff9999; border: 1px solid #6e0b0b; }';
