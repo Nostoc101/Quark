@@ -1,16 +1,17 @@
 {
-  "name": "ultimate-Nostoc-whatsapp-bot",
-  "version": "1.0.0",
-  "description": "Error-Free 55-Bug Clustered Architecture and WhatsApp Bot for Render and Railway",
+  "name": "vigilant-system-v7",
+  "version": "7.0.0",
+  "description": "High-performance modular monitoring framework via real pairing code under Operator Nostoc.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
+  "author": "Nostoc 😈",
+  "license": "MIT",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.16",
-    "pino": "^9.4.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@whiskeysockets/baileys": "^6.6.0",
+    "pino": "^9.0.0",
+    "dotenv": "^16.4.5"
   }
 }
