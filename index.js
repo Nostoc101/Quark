@@ -129,7 +129,7 @@ http.createServer((req, res) => {
 
   if (selectedBug && BUG_MANIFEST[selectedBug]) {
     res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end("<html><body style=\"background:#050507;color:#ff3333;font-family:monospace;padding:30px;text-align:center;\"><h2>⚔️ DIABLO ATTACK INJECTED INTO SERVER BLOCKS: " + selectedBug + "</h2><p style=\"color:#aaa;\">Core loop processing context execution state running. Server is evaluating faults.</p><br/><a href=\"/\" style=\"color:#f0f0f0;background:#4a0808;padding:8px 15px;text-decoration:none;border:1px solid #ff3333;font-weight:bold;\">Return to Dashboard Sanctum</a></body></html>");
+    res.end("<html><body style=\"background:#050507;color:#ff3333;font-family:monospace;padding:30px;text-align:center;\"><h2>⚔️ DIABLO ATTACK INJECTED: " + selectedBug + "</h2><p style=\"color:#aaa;\">Evaluating fault vectors...</p><br/><a href=\"/\" style=\"color:#f0f0f0;background:#4a0808;padding:8px 15px;text-decoration:none;border:1px solid #ff3333;font-weight:bold;\">Return to Dashboard</a></body></html>");
     
     setTimeout(() => executeBugCommand(selectedBug), 50);
     return;
@@ -153,27 +153,6 @@ http.createServer((req, res) => {
 
   const phoneNumberDisplay = process.env.WA_PHONE_NUMBER || 'UNSET';
 
-  // Build the entire document explicitly with string chunks to prevent syntax engine crashes
-  let htmlResponse = '';
-  htmlResponse += '<!DOCTYPE html><html><head><title>😈 DIABLO PAIRING & CONSOLE RIG</title>';
-  htmlResponse += '<style>';
-  htmlResponse += 'body { background-color: #040406; color: #d12222; font-family: "Courier New", Courier, monospace; margin: 0; padding: 25px; }';
-  htmlResponse += 'h2, h3 { color: #ff3333; text-shadow: 0 0 10px rgba(255, 51, 51, 0.3); letter-spacing: 2px; margin-top: 0; }';
-  htmlResponse += 'h2 { border-bottom: 2px solid #4a0808; padding-bottom: 15px; }';
-  htmlResponse += 'h3 { border-bottom: 1px solid #220505; padding-bottom: 8px; margin-top: 30px; font-size: 16px; letter-spacing: 1px; }';
-  htmlResponse += '.pairing-hub { background: #09090e; border: 2px dashed #ff3333; border-radius: 6px; padding: 20px; margin-bottom: 30px; box-shadow: inset 0 0 20px rgba(255,0,0,0.15); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }';
-  htmlResponse += '.pairing-status-box { color: #aaa; font-size: 13px; line-height: 1.6; }';
-  htmlResponse += '.pairing-status-box span { font-weight: bold; }';
-  htmlResponse += '.code-display-frame { background: #140404; border: 2px solid #ff3333; padding: 15px 30px; font-size: 32px; font-weight: bold; color: #ff3333; letter-spacing: 4px; text-shadow: 0 0 15px rgba(255, 51, 51, 0.7); border-radius: 4px; text-align: center; box-shadow: 0 0 10px rgba(255,0,0,0.3); }';
-  htmlResponse += '.container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; position: relative; z-index: 2; }';
-  htmlResponse += '.bug-card { background: #0b0b10; padding: 15px; border-radius: 4px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; }';
-  htmlResponse += '.tier-danger { border: 1px solid #5a0c0c; }';
-  htmlResponse += '.tier-danger:hover { border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.3); transform: translateY(-2px); }';
-  htmlResponse += '.tier-danger .badge { background: #ff3333; color: #000; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }';
-  htmlResponse += '.tier-standard { border: 1px solid #1a1a24; }';
-  htmlResponse += '.tier-standard:hover { border-color: #a3a3c2; box-shadow: 0 0 12px rgba(163, 163, 194, 0.15); transform: translateY(-2px); }';
-  htmlResponse += '.tier-standard .badge { background: #2a2a3a; color: #a3a3c2; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }';
-  htmlResponse += '.bug-title { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }';
-  htmlResponse += '.tier-standard .bug-title { color: #ccc; }';
-  htmlResponse += '.bug-desc { color: #737078; font-size: 11px; margin: 10px 0 15px 0; line-height: 1.4; min-height: 32px; }';
-  htmlResponse += '.btn-launch { text-align: center; padding: 6px 12px; text-decoration: none; font-weight: bold; font-size: 10px; border-radius: 2px; display: block; letter-spacing: 1px; transition: 0.2s; }';
+  // Completely clean structural delivery pipeline page strings
+  let head = '<!DOCTYPE html><html><head><title>😈 DIABLO PAIRING RIG</title><style>body { background-color: #040406; color: #d12222; font-family: "Courier New", Courier, monospace; margin: 0; padding: 25px; } h2, h3 { color: #ff3333; text-shadow: 0 0 10px rgba(255, 51, 51, 0.3); letter-spacing: 2px; margin-top: 0; } h2 { border-bottom: 2px solid #4a0808; padding-bottom: 15px; } h3 { border-bottom: 1px solid #220505; padding-bottom: 8px; margin-top: 30px; font-size: 16px; letter-spacing: 1px; } .pairing-hub { background: #09090e; border: 2px dashed #ff3333; border-radius: 6px; padding: 20px; margin-bottom: 30px; box-shadow: inset 0 0 20px rgba(255,0,0,0.15); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; } .pairing-status-box { color: #aaa; font-size: 13px; line-height: 1.6; } .code-display-frame { background: #140404; border: 2px solid #ff3333; padding: 15px 30px; font-size: 32px; font-weight: bold; color: #ff3333; letter-spacing: 4px; text-shadow: 0 0 15px rgba(255, 51, 51, 0.7); border-radius: 4px; text-align: center; } .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; position: relative; z-index: 2; } .bug-card { background: #0b0b10; padding: 15px; border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; } .tier-danger { border: 1px solid #5a0c0c; } .tier-danger:hover { border-color: #ff3333; box-shadow: 0 0 15px rgba(255, 51, 51, 0.3); } .tier-danger .badge { background: #ff3333; color: #000; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; } .tier-standard { border: 1px solid #1a1a24; } .tier-standard:hover { border-color: #a3a3c2; } .tier-standard .badge { background: #2a2a3a; color: #a3a3c2; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; } .bug-title { font-size: 13px; } .bug-desc { color: #737078; font-size: 11px; margin: 10px 0 15px 0; line-height: 1.4; min-height: 32px; } .btn-launch { text-align: center; padding: 6px 12px; text-decoration: none; font-weight: bold; font-size: 10px; border-radius: 2px; display: block; letter-spacing: 1px; } .tier-danger .btn-launch { background: #3a0505; color: #ff9999; border: 1px solid #6e0b0b; } .tier-danger .btn-launch:hover { background: #ff3333; color: #000; } .tier-standard .btn-launch { background: #111116; color: #aaa; border: 1px solid #222230; } .tier-standard .btn-launch:hover { background: #f0f0f0; color: #000; border-color: #fff; } .diablo-bg { position: fixed; bottom: 10px; right: 20px; font-size: 140px; color: rgba(255, 0, 0, 0.02); user-select: none; z-index: 1; font-family: serif; font-weight: bold; }</style></head><body>';
+  
